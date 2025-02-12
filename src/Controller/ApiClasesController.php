@@ -8,15 +8,16 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
-final class ApiClasesController extends AbstractController
+class ApiClasesController extends AbstractController
 {
     #[Route('/api/clases', name: 'get_all_clases', methods: ['GET'])]
     public function getAllClases(ClasesRepository $clasesRepository): JsonResponse
     {
         $clases = $clasesRepository->findAll();
         
-        $clasesArray = array_map(function($clase) {
-            return [
+        $resultado = [];
+        foreach ($clases as $clase) {
+            $resultado[] = [
                 'id' => $clase->getId(),
                 'nombre' => $clase->getNombre(),
                 'descripcion' => $clase->getDescripcion(),
@@ -25,32 +26,50 @@ final class ApiClasesController extends AbstractController
                 'estado' => $clase->getEstado(),
                 'ubicacion' => $clase->getUbicacion(),
             ];
-        }, $clases);
-
-        return new JsonResponse($clasesArray);
-    }
-
-    #[Route('/api/clases/by-name/{nombre}', name: 'get_clase_by_name', methods: ['GET'])]
-    public function getClaseByName(string $nombre, ClasesRepository $clasesRepository): JsonResponse
-    {
-        $clases = $clasesRepository->findByNombre($nombre);
-        
-        if (!$clases) {
-            return new JsonResponse(['message' => 'No se encontraron clases con ese nombre'], 404);
         }
 
-        $clasesArray = array_map(function($clase) {
-            return [
-                'id' => $clase->getId(),
-                'nombre' => $clase->getNombre(),
-                'descripcion' => $clase->getDescripcion(),
-                'fecha' => $clase->getFecha()->format('Y-m-d'),
-                'capacidad' => $clase->getCapacidad(),
-                'estado' => $clase->getEstado(),
-                'ubicacion' => $clase->getUbicacion(),
-            ];
-        }, $clases);
+        return new JsonResponse($resultado);
+    }
 
-        return new JsonResponse($clasesArray);
+    #[Route('/api/clases/by-date/{fecha}', name: 'get_clase_by_date', methods: ['GET'])]
+    public function getClaseByDate(string $fecha, ClasesRepository $clasesRepository): JsonResponse
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            return new JsonResponse([
+                'mensaje' => 'Formato de fecha inválido. Use YYYY-MM-DD'
+            ], 400);
+        }
+
+        try {
+            $fechaBusqueda = new \DateTime($fecha);
+            
+            $clases = $clasesRepository->findByFecha($fechaBusqueda);
+            
+            if (empty($clases)) {
+                return new JsonResponse([
+                    'mensaje' => 'No se encontraron clases para esta fecha'
+                ], 404);
+            }
+
+            $resultado = [];
+            foreach ($clases as $clase) {
+                $resultado[] = [
+                    'id' => $clase->getId(),
+                    'nombre' => $clase->getNombre(),
+                    'descripcion' => $clase->getDescripcion(),
+                    'fecha' => $clase->getFecha()->format('Y-m-d'),
+                    'capacidad' => $clase->getCapacidad(),
+                    'estado' => $clase->getEstado(),
+                    'ubicacion' => $clase->getUbicacion(),
+                ];
+            }
+
+            return new JsonResponse($resultado);
+
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'mensaje' => 'Error al procesar la fecha'
+            ], 400);
+        }
     }
 }

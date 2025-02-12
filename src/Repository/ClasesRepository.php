@@ -41,14 +41,26 @@ class ClasesRepository extends ServiceEntityRepository
     //        ;
     //    }
 
+
     /**
-     * @return Clases[] Returns an array of Clases objects
+     * Busca clases por fecha
+     * 
+     * @param \DateTime $fecha La fecha a buscar
+     * @return Clases[] Un array con las clases encontradas
      */
-    public function findByNombre(string $nombre): array
+    public function findByFecha(\DateTime $fecha): array
     {
+        // Crear el inicio y fin del día para buscar todas las clases de ese día
+        $inicioDia = clone $fecha;
+        $inicioDia->setTime(0, 0, 0);
+        
+        $finDia = clone $fecha;
+        $finDia->setTime(23, 59, 59);
+
         return $this->createQueryBuilder('c')
-            ->andWhere('c.nombre LIKE :nombre')
-            ->setParameter('nombre', '%' . $nombre . '%')
+            ->andWhere('c.fecha BETWEEN :inicio AND :fin')
+            ->setParameter('inicio', $inicioDia)
+            ->setParameter('fin', $finDia)
             ->orderBy('c.fecha', 'ASC')
             ->getQuery()
             ->getResult();
