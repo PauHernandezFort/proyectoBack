@@ -40,4 +40,17 @@ class ClasesRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    /**
+     * @return Clases[] Returns an array of Clases objects
+     */
+    public function findByNombre(string $nombre): array
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('c.nombre LIKE :nombre')
+            ->setParameter('nombre', '%' . $nombre . '%')
+            ->orderBy('c.fecha', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
